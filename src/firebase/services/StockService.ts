@@ -38,6 +38,12 @@ class StockService {
   }
 
   async get(id: string): Promise<Stock | null> {
+    const fromCache = this.stocksCache?.find(item => item.id === id);
+
+    if (fromCache) {
+      return fromCache;
+    }
+
     const docSnap = await getDoc(doc(db, 'stocks', id));
     const data = docSnap.data();
 

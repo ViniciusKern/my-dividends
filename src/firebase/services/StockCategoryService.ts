@@ -23,7 +23,39 @@ const EMOJIS: Record<string, string> = {
 };
 
 class StockCategoryService {
+  private categoriesCache: StockCategory[] | null = null;
+
   async list(): Promise<StockCategory[]> {
+    if (!this.categoriesCache) {
+      this.categoriesCache = await this.loadCategories();
+    }
+
+    return this.categoriesCache;
+  }
+
+  async create(name: string, country: StockCategory['country']) {
+    const newCategory = await addDoc(collection(db, 'stock_categories'), { name, country });
+    this.categoriesCache = null;
+    return newCategory;
+  }
+
+  async update(category: StockCategory) {
+    const categoryDoc = doc(db, 'stock_categories', category.id);
+    await updateDoc(categoryDoc, category);
+    this.categoriesCache = null;
+  }
+
+  async delete(id: string) {
+    const categoryDoc = doc(db, 'stock_categories', id);
+    await deleteDoc(categoryDoc);
+    this.categoriesCache = null;
+  }
+
+  currency(country: StockCategory['country']) {
+    return CURRENCIES_BY_COUNTRY[country];
+  }
+
+  private async loadCategories(): Promise<StockCategory[]> {
     const categoriesQuery = query(collection(db, 'stock_categories'), orderBy('country'));
     const data = await getDocs(categoriesQuery);
 
@@ -36,25 +68,6 @@ class StockCategoryService {
         emoji: EMOJIS[data.country],
       };
     });
-  }
-
-  async create(name: string, country: StockCategory['country']) {
-    const newCategory = await addDoc(collection(db, 'stock_categories'), { name, country });
-    return newCategory;
-  }
-
-  async update(category: StockCategory) {
-    const categoryDoc = doc(db, 'stock_categories', category.id);
-    await updateDoc(categoryDoc, category);
-  }
-
-  async delete(id: string) {
-    const categoryDoc = doc(db, 'stock_categories', id);
-    await deleteDoc(categoryDoc);
-  }
-
-  currency(country: StockCategory['country']) {
-    return CURRENCIES_BY_COUNTRY[country];
   }
 }
 

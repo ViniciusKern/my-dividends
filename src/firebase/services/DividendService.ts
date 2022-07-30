@@ -19,20 +19,23 @@ import StockCategoryService from './StockCategoryService';
 import StockService from './StockService';
 
 class DividendService {
+  private dividendsCache: Dividend[] | null = null;
+
   async list(): Promise<Dividend[]> {
-    const dividendsQuery = query(
-      collection(db, 'dividends'),
-      where('userId', '==', auth.currentUser?.uid)
-    );
+    if (!this.dividendsCache) {
+      this.dividendsCache = await this.loadDividends();
+    }
 
-    const data = await getDocs(dividendsQuery);
-
-    const stocks = await StockService.list();
-
-    return data.docs.map(doc => this.mapToDividend(doc.id, doc.data(), stocks));
+    return this.dividendsCache;
   }
 
   async get(id: string): Promise<Dividend | null> {
+    const fromCache = this.dividendsCache?.find(item => item.id === id);
+
+    if (fromCache) {
+      return fromCache;
+    }
+
     const docSnap = await getDoc(doc(db, 'dividends', id));
     const data = docSnap.data();
 
@@ -52,6 +55,9 @@ class DividendService {
       stock: doc(db, `stocks/${stock.id}`),
       userId: auth.currentUser?.uid,
     });
+
+    this.dividendsCache = null;
+
     return newDividend;
   }
 
@@ -62,11 +68,27 @@ class DividendService {
       paymentDate: stringToDate(paymentDateValue),
       cashAmount: cashAmount,
     });
+
+    this.dividendsCache = null;
   }
 
   async delete(id: string) {
     const dividendDoc = doc(db, 'dividends', id);
     await deleteDoc(dividendDoc);
+    this.dividendsCache = null;
+  }
+
+  private async loadDividends(): Promise<Dividend[]> {
+    const dividendsQuery = query(
+      collection(db, 'dividends'),
+      where('userId', '==', auth.currentUser?.uid)
+    );
+
+    const data = await getDocs(dividendsQuery);
+
+    const stocks = await StockService.list();
+
+    return data.docs.map(doc => this.mapToDividend(doc.id, doc.data(), stocks));
   }
 
   private mapToDividend(id: string, data: DocumentData, stocks: Stock[]): Dividend {
