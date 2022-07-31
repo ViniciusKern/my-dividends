@@ -88,7 +88,9 @@ class DividendService {
 
     const stocks = await StockService.list();
 
-    return data.docs.map(doc => this.mapToDividend(doc.id, doc.data(), stocks));
+    return data.docs
+      .map(doc => this.mapToDividend(doc.id, doc.data(), stocks))
+      .sort((a: Dividend, b: Dividend) => a.paymentDate.getTime() - b.paymentDate.getTime());
   }
 
   private mapToDividend(id: string, data: DocumentData, stocks: Stock[]): Dividend {

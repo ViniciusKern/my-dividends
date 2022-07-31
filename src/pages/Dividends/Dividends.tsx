@@ -96,7 +96,7 @@ export default function Dividends() {
           <DividendTable dividends={filteredDividends} onDelete={handleDelete} />
         </>
       ) : (
-        <EmptyState title='No dividends' />
+        status !== 'loading' && <EmptyState title='No dividends' />
       )}
     </ContainerWithLoading>
   );

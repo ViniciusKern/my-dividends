@@ -34,18 +34,15 @@ const Table = styled.table`
 
   tbody {
     td {
-      background: ${({ theme }: ThemeProps) => theme.colors.lightBackground};
       padding: 8px;
       border: 1px solid #e4e4e4;
     }
 
-    tr:last-of-type {
-      td:first-of-type {
-        border-bottom-left-radius: 4px;
-      }
+    tr {
+      background: ${({ theme }: ThemeProps) => theme.colors.lightBackground};
 
-      td:last-of-type {
-        border-bottom-right-radius: 4px;
+      &:nth-child(even) {
+        background-color: #e8e8e8;
       }
     }
   }
