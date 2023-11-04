@@ -1,9 +1,11 @@
-import { Dividend } from './dividend.type';
+import { Dividend } from "./dividend.type";
 
 export type ChartOptions = {
   startDate: Date;
   endDate: Date;
-  country: 'all' | 'BR' | 'US';
+  startDateISO: string;
+  endDateISO: string;
+  country: "all" | "BR" | "US";
 };
 
 export type ChartData = {

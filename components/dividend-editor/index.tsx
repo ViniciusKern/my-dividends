@@ -1,21 +1,15 @@
-import { forwardRef, useState } from 'react';
-import {
-  Group,
-  Container,
-  Text,
-  Select,
-  Input,
-  Button,
-  createStyles,
-  SimpleGrid,
-  Loader,
-  Center,
-} from '@mantine/core';
-import { DateInput } from '@mantine/dates';
+import { useEffect, useState } from "react";
 
-import { Stock } from '@/types/stock.types';
-import { Dividend } from '@/types/dividend.type';
-import { useDollarExchangeRate } from '@/hooks/queries/useDollarExchangeRate';
+import { Stock } from "@/types/stock.types";
+import { Dividend } from "@/types/dividend.type";
+import { useDollarExchangeRate } from "@/hooks/queries/useDollarExchangeRate";
+import { Combobox, ComboboxOption } from "../common/combobox";
+import { Input } from "../common/input";
+import { InputCurrency } from "../common/input-currency";
+import { DatePickerInput } from "../common/date-picker-input";
+import { Button } from "../common/button";
+import { cn } from "@/utils/cn";
+import { Spinner } from "../common/spinner";
 
 type Props = {
   stocks: Stock[];
@@ -24,24 +18,29 @@ type Props = {
 };
 
 function DividendEditor({ stocks, onSave, onClose }: Props) {
-  const { classes } = useStyles();
-
   const [selectedStock, setSelectedStock] = useState<Stock | null>(null);
+  const [selectedStockOption, setSelectedStockOption] =
+    useState<ComboboxOption | null>(null);
+
   const [paymentDate, setPaymentDate] = useState<Date>(() => new Date());
   const [cashAmount, setCashAmount] = useState<number | undefined>(undefined);
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const { data: dollarValue } = useDollarExchangeRate(paymentDate);
 
+  useEffect(() => {
+    setSelectedStockOption(toComboboxOption(selectedStock));
+  }, [selectedStock]);
+
   function handleStockChange(stockId: string) {
-    setSelectedStock(stocks.find(stock => stock._id === stockId) ?? null);
+    setSelectedStock(stocks.find((stock) => stock._id === stockId) ?? null);
   }
 
   function handlePaymentDateChange(value: Date) {
     setPaymentDate(value);
   }
 
-  function handleChangeCashAmount(event: React.ChangeEvent<HTMLInputElement>) {
-    setCashAmount(Number(event.target.value));
+  function handleChangeCashAmount(value: string) {
+    setCashAmount(Number(value));
   }
 
   function handleSave() {
@@ -57,112 +56,96 @@ function DividendEditor({ stocks, onSave, onClose }: Props) {
     }
   }
 
-  const isForeign = selectedStock?.country !== 'BR';
+  const isForeign = selectedStock?.country !== "BR";
 
   return (
-    <Container h={500}>
+    <div className="h-[300px]">
       {isSaving ? (
-        <Center h={500}>
-          <Loader />
-        </Center>
+        <div className="h-full flex items-center justify-center">
+          <Spinner />
+        </div>
       ) : (
-        <>
-          <h3>Novo Dividendo {selectedStock && selectedStock.country_flag}</h3>
-          <Select
-            required
-            label='Ativo'
-            placeholder='Selecione o ativo que pagou o dividendo'
-            itemComponent={SelectItem}
-            data={stocks.map(stock => ({
-              label: `${stock.name} (${stock.ticker})`,
-              detail: `${stock.category} ${stock.country_flag}`,
-              value: stock._id,
-            }))}
-            searchable
-            maxDropdownHeight={340}
-            mt={16}
-            mb={16}
-            nothingFound='Nenhum resultado encontrado'
-            onChange={handleStockChange}
-          />
+        <div className="flex flex-col justify-between h-full">
+          <div className="flex flex-col gap-6">
+            <Combobox
+              placeholder="Stock"
+              value={selectedStockOption}
+              onChange={handleStockChange}
+              options={stocks.map((stock) => toComboboxOption(stock)!)}
+            />
 
-          {selectedStock && (
-            <>
-              <SimpleGrid cols={isForeign ? 2 : 1}>
-                <DateInput
-                  required
-                  valueFormat='DD/MM/YYYY'
-                  label='Data do Pagamento'
-                  maw={160}
+            {selectedStock && (
+              <div className={cn("grid gap-6", isForeign && "grid-cols-2")}>
+                <DatePickerInput
+                  label="Payment Date"
                   value={paymentDate}
                   onChange={handlePaymentDateChange}
                 />
 
                 {isForeign && (
-                  <Input.Wrapper label='Cotação do Dólar (R$)' maw={160} required>
-                    <Input type='number' value={dollarValue} disabled />
-                  </Input.Wrapper>
+                  <Input
+                    disabled
+                    name="dollarRate"
+                    placeholder="Dollar Rate (R$)"
+                    type="number"
+                    value={dollarValue}
+                  />
                 )}
 
-                <Input.Wrapper label={`Valor (${isForeign ? 'U$' : 'R$'})`} maw={160} required>
-                  <Input type='number' value={cashAmount} onChange={handleChangeCashAmount} />
-                </Input.Wrapper>
-              </SimpleGrid>
-
-              <Group spacing='xl' className={classes.footer}>
-                <Button w={140} color='red' variant='light' onClick={onClose}>
-                  Cancelar
-                </Button>
-                <Button
-                  w={140}
-                  disabled={!cashAmount || !paymentDate || !selectedStock}
-                  onClick={handleSave}
-                >
-                  Salvar
-                </Button>
-              </Group>
-            </>
-          )}
-        </>
+                <InputCurrency
+                  name="dividendValue"
+                  placeholder={`Value (${isForeign ? "U$" : "R$"})`}
+                  value={cashAmount}
+                  onChange={handleChangeCashAmount}
+                />
+              </div>
+            )}
+          </div>
+          <FooterButtons
+            disableSave={!cashAmount || !paymentDate || !selectedStock}
+            onSave={handleSave}
+            onClose={onClose}
+          />
+        </div>
       )}
-    </Container>
-  );
-}
-
-interface ItemProps extends React.ComponentPropsWithoutRef<'div'> {
-  value: string;
-  label: string;
-  detail: string;
-}
-
-const SelectItem = forwardRef<HTMLDivElement, ItemProps>(function SelectItem(
-  { label, detail, ...others }: ItemProps,
-  ref
-) {
-  const { classes } = useStyles();
-
-  return (
-    <div ref={ref} {...others}>
-      <div className={classes.selectContent}>
-        <Text size='sm'>{label}</Text>
-        <Text size='xs'>{detail}</Text>
-      </div>
     </div>
   );
-});
+}
 
-const useStyles = createStyles(theme => ({
-  selectContent: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: '8px',
-  },
-  footer: {
-    position: 'fixed',
-    bottom: theme.spacing.md,
-    right: theme.spacing.md,
-  },
-}));
+function FooterButtons({
+  disableSave,
+  onSave,
+  onClose,
+}: {
+  disableSave: boolean;
+  onSave: () => void;
+  onClose: () => void;
+}) {
+  return (
+    <div className="flex gap-6 justify-end">
+      <Button className="w-1/2" variant="ghost" size="sm" onClick={onClose}>
+        Cancel
+      </Button>
+      <Button
+        className="w-1/2"
+        size="sm"
+        disabled={disableSave}
+        onClick={onSave}
+      >
+        Save
+      </Button>
+    </div>
+  );
+}
+
+function toComboboxOption(stock: Stock | null): ComboboxOption | null {
+  if (!stock) return null;
+
+  return {
+    value: stock._id,
+    label: `${stock.name} (${stock.ticker})`,
+    detail: `${stock.category} ${stock.country_flag}`,
+  };
+}
 
 export default DividendEditor;

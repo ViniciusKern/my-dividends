@@ -1,17 +1,9 @@
-import { notifications } from '@mantine/notifications';
+import toast from "react-hot-toast";
 
 export function showSuccess(message: string) {
-  notifications.show({
-    title: 'Sucesso!',
-    message: message,
-    color: 'green',
-  });
+  toast.success(message);
 }
 
 export function showError(message: string) {
-  notifications.show({
-    title: 'Erro!',
-    message: message,
-    color: 'red',
-  });
+  toast.error(message);
 }

@@ -1,13 +1,16 @@
-import { NextApiRequest, NextApiResponse } from 'next';
+import { NextApiRequest, NextApiResponse } from "next";
 
-import { connectToDatabase, isAuthenticated } from '@/utils/api-utils';
-import { listDividends } from '.';
-import { formatDateToISO } from '@/utils/date-utils';
-import { Dividend } from '@/types/dividend.type';
-import { Stats } from '@/types/stats.type';
+import { connectToDatabase, isAuthenticated } from "@/utils/api-utils";
+import { listDividends } from ".";
+import { formatDateToISO } from "@/utils/date-utils";
+import { Dividend } from "@/types/dividend.type";
+import { DividendStat } from "@/types/stats.type";
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== 'GET') {
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse
+) {
+  if (req.method !== "GET") {
     return;
   }
 
@@ -20,67 +23,85 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const userId = String(req.headers.userId);
 
   try {
-    const [startDate, endDate] = getStatsDateRange();
+    const today = new Date();
+    const currentYear = today.getFullYear();
+    const lastYear = today.getFullYear() - 1;
+    const lastDayOfCurrentMonth = new Date(
+      currentYear,
+      today.getMonth() + 1,
+      0
+    );
 
-    const dividends = (await listDividends(
+    const lastYearStart = new Date(lastYear, 0, 1);
+
+    const dividendList = (await listDividends(
       db,
       userId,
-      'all',
-      formatDateToISO(startDate),
-      formatDateToISO(endDate)
+      "all",
+      formatDateToISO(lastYearStart),
+      formatDateToISO(lastDayOfCurrentMonth)
     )) as Dividend[];
 
-    const year1 = startDate.getFullYear();
-    const year2 = startDate.getFullYear() + 1;
-    const year3 = endDate.getFullYear();
-
-    const sum = {
-      [year1]: 0,
-      [year2]: 0,
-      [year3]: 0,
+    const dividendSum = {
+      [currentYear]: 0,
+      [lastYear]: 0,
     };
 
-    let partialSumYear2 = 0;
+    let lastYearSamePeriodSum = 0;
 
-    dividends.forEach(dividend => {
+    dividendList.forEach((dividend) => {
       const cash =
-        dividend.country === 'US'
+        dividend.country === "US"
           ? Number(dividend.cashAmount) * Number(dividend.dollarRate)
           : Number(dividend.cashAmount);
 
       const dividendYear = dividend.paymentDate.getFullYear();
-      sum[dividendYear] = sum[dividendYear] + cash;
+      dividendSum[dividendYear] = dividendSum[dividendYear] + cash;
 
-      if (dividendYear === year2 && dividend.paymentDate.getMonth() <= endDate.getMonth()) {
-        partialSumYear2 += cash;
+      if (
+        dividendYear === lastYear &&
+        dividend.paymentDate.getMonth() <= today.getMonth()
+      ) {
+        lastYearSamePeriodSum += cash;
       }
     });
 
-    const sumYear2 = sum[year2];
-    const sumYear3 = sum[year3];
-    const monthAvgYear2 = sumYear2 / 12;
-    const monthAvgYear3 = sumYear3 / (endDate.getMonth() + 1);
+    const lastYearMonthAvg = dividendSum[lastYear] / 12;
+    const currentYearMonthAvg =
+      dividendSum[currentYear] / (today.getMonth() + 1);
 
-    const stats: Stats = {
-      previous: {
-        year: year2,
-        total: sumYear2,
-        totalDiff: calculatePercentageDifference(sum[year1], sumYear2),
-        monthAverage: monthAvgYear2,
-        monthDiff: calculatePercentageDifference(sum[year1] / 12, monthAvgYear2),
+    const result: DividendStat[] = [
+      {
+        title: `Monthly Average ${lastYear}`,
+        value: lastYearMonthAvg,
       },
-      current: {
-        year: year3,
-        total: sumYear3,
-        totalDiff: calculatePercentageDifference(partialSumYear2, sumYear3),
-        monthAverage: monthAvgYear3,
-        monthDiff: calculatePercentageDifference(monthAvgYear2, monthAvgYear3),
+      {
+        title: `Monthly Average ${currentYear}`,
+        value: currentYearMonthAvg,
+        diff: calculatePercentageDifference(
+          lastYearMonthAvg,
+          currentYearMonthAvg
+        ),
+        comparingBasis: `comparing to ${lastYear}`,
       },
-    };
+      {
+        title: `Total Sum ${lastYear}`,
+        value: dividendSum[lastYear],
+      },
+      {
+        title: `Total Sum ${currentYear}`,
+        value: dividendSum[currentYear],
+        diff: calculatePercentageDifference(
+          lastYearSamePeriodSum,
+          dividendSum[currentYear]
+        ),
+        comparingBasis: "comparing to the same period last year",
+      },
+    ];
 
     res.status(200).json({
-      message: 'Stats retrieved!',
-      data: stats,
+      message: "Stats retrieved!",
+      data: result,
     });
   } finally {
     close();
@@ -93,11 +114,4 @@ function calculatePercentageDifference(previous: number, current: number) {
   const difference = current - previous;
   const percentage = (difference / previous) * 100;
   return percentage;
-}
-
-function getStatsDateRange() {
-  const today = new Date();
-  const previousYearStart = new Date(today.getFullYear() - 2, 0, 1);
-  const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-  return [previousYearStart, lastDayOfMonth];
 }

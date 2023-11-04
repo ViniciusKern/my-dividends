@@ -1,12 +1,11 @@
-import StatsGrid from '@/components/stats-grid';
-import DividendView from '@/components/dividend-view';
-import { Divider } from '@mantine/core';
+import StatsGrid from "@/components/stats-grid";
+import DividendView from "@/components/dividend-view";
 
 function Home() {
   return (
     <>
       <DividendView />
-      <Divider my='lg' />
+      <hr className="border-t border-gray-300 my-6" />
       <StatsGrid />
     </>
   );

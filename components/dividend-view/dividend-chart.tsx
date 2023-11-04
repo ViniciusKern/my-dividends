@@ -1,23 +1,24 @@
-import dynamic from 'next/dynamic';
+import dynamic from "next/dynamic";
 
-const Chart = dynamic(() => import('react-apexcharts'), {
+const Chart = dynamic(() => import("react-apexcharts"), {
   ssr: false,
 });
 
-import { ChartData, ChartOptions } from '@/types/chart-options.type';
+import { ChartData, ChartOptions } from "@/types/chart-options.type";
 
-type Props = {
+interface DividendChartProps {
   chartData: ChartData;
   options: ChartOptions;
-};
+}
 
-function DividendChart({ chartData, options }: Props) {
-  const currency = options.country === 'US' ? 'U$' : 'R$';
+function DividendChart({ chartData, options }: DividendChartProps) {
+  const currency = options.country === "US" ? "U$" : "R$";
 
   const series: ApexAxisChartSeries = [
     {
-      name: 'Dividendos',
+      name: "Dividends",
       data: chartData.values,
+      color: "#099268",
     },
   ];
 
@@ -34,7 +35,7 @@ function DividendChart({ chartData, options }: Props) {
       },
       group: {
         style: {
-          fontSize: '10px',
+          fontSize: "10px",
           fontWeight: 700,
         },
         groups: Array.from(chartData.groups, ([key, value]) => ({
@@ -48,14 +49,15 @@ function DividendChart({ chartData, options }: Props) {
     },
     tooltip: {
       y: {
-        formatter: (cashAmount: number) => `${currency} ${cashAmount.toFixed(2)}`,
+        formatter: (cashAmount: number) =>
+          `${currency} ${cashAmount.toFixed(2)}`,
       },
     },
   };
 
   return (
-    <div id='chart'>
-      <Chart options={apexOptions} series={series} type='bar' height={400} />
+    <div id="chart">
+      <Chart options={apexOptions} series={series} type="bar" height={400} />
     </div>
   );
 }

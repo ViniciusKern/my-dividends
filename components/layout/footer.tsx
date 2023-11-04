@@ -1,24 +1,11 @@
-import { createStyles, Text, rem } from '@mantine/core';
-
 function AppFooter() {
-  const { classes } = useStyles();
-
   return (
-    <footer className={classes.footer}>
-      <Text color='dimmed' size='sm' align='center'>
+    <footer className="bg-gray-100 flex items-center justify-center py-4 border-t border-gray-300">
+      <p className="text-gray-600 text-center xs:text-xs">
         © {new Date().getFullYear()} VK SOFTWARE LTDA, All rights reserved.
-      </Text>
+      </p>
     </footer>
   );
 }
-
-const useStyles = createStyles(theme => ({
-  footer: {
-    paddingTop: `calc(${theme.spacing.md} * 1)`,
-    paddingBottom: `calc(${theme.spacing.md} * 1)`,
-    backgroundColor: theme.colors.gray[0],
-    borderTop: `${rem(1)} solid ${theme.colors.gray[2]}`,
-  },
-}));
 
 export default AppFooter;

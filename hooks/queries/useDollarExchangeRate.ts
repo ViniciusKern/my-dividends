@@ -1,23 +1,24 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery } from "@tanstack/react-query";
 
 export function useDollarExchangeRate(originalDate: Date) {
   let date = new Date(originalDate.getTime());
   date = adjustDate(date);
 
-  const month = (date.getMonth() + 1).toString().padStart(2, '0');
-  const day = date.getDate().toString().padStart(2, '0');
+  const month = (date.getMonth() + 1).toString().padStart(2, "0");
+  const day = date.getDate().toString().padStart(2, "0");
   const year = date.getFullYear().toString();
 
   const formattedDate = `${month}-${day}-${year}`;
 
   return useQuery<number>({
-    queryKey: ['dollarExchangeRate', formattedDate],
+    queryKey: ["dollarExchangeRate", formattedDate],
     queryFn: () =>
       fetch(
         `https://olinda.bcb.gov.br/olinda/servico/PTAX/versao/v1/odata/CotacaoDolarDia(dataCotacao=@dataCotacao)?@dataCotacao='${formattedDate}'&$top=100&$format=json&$select=cotacaoVenda`
       )
-        .then(res => res.json())
-        .then(res => res.value[0]?.cotacaoVenda ?? 5),
+        .then((res) => res.json())
+        .then((res) => res.value[0]?.cotacaoVenda ?? 5),
+    staleTime: Infinity,
   });
 }
 

@@ -1,9 +1,14 @@
-import { ChartData, ChartOptions, MonthColumn } from '@/types/chart-options.type';
-import { Dividend } from '@/types/dividend.type';
-import { formatCurrency } from './currency-utils';
+import {
+  ChartData,
+  ChartOptions,
+  MonthColumn,
+} from "@/types/chart-options.type";
+import { Dividend } from "@/types/dividend.type";
+import { formatCurrency } from "./currency-utils";
+import { formatDateToISO } from "./date-utils";
 
 function mapToMonthColum(date: Date): MonthColumn {
-  const month = date.toLocaleString('pt-br', { month: 'long' });
+  const month = date.toLocaleString("en-us", { month: "long" });
   const year = date.getFullYear();
 
   return {
@@ -13,7 +18,10 @@ function mapToMonthColum(date: Date): MonthColumn {
   };
 }
 
-export function generateChartData(dividends: Dividend[], chartOptions: ChartOptions): ChartData {
+export function generateChartData(
+  dividends: Dividend[],
+  chartOptions: ChartOptions
+): ChartData {
   const months: MonthColumn[] = [];
   const groups = new Map<number, number>();
 
@@ -30,30 +38,37 @@ export function generateChartData(dividends: Dividend[], chartOptions: ChartOpti
     auxDate = new Date(auxDate.setMonth(auxDate.getMonth() + 1));
   }
 
-  const values: ChartData['values'] = [];
-  const dividendsByMonth: ChartData['dividendsByMonth'] = [];
+  const values: ChartData["values"] = [];
+  const dividendsByMonth: ChartData["dividendsByMonth"] = [];
 
   const today = new Date();
 
-  const isOnlyUS = chartOptions.country === 'US';
+  const isOnlyUS = chartOptions.country === "US";
 
-  months.forEach(monthYear => {
+  months.forEach((monthYear) => {
     const filteredDividends = dividends
-      .filter(dividend => mapToMonthColum(dividend.paymentDate).key === monthYear.key)
-      .map(dividend => {
+      .filter(
+        (dividend) =>
+          mapToMonthColum(dividend.paymentDate).key === monthYear.key
+      )
+      .map((dividend) => {
         let valueToFormat = Number(dividend.cashAmount);
-        let countryToFormat: 'BR' | 'US' = 'BR';
+        let countryToFormat: "BR" | "US" = "BR";
 
-        if (dividend.country === 'US') {
+        if (dividend.country === "US") {
           if (isOnlyUS) {
-            countryToFormat = 'US';
+            countryToFormat = "US";
           } else {
-            const convertedCashAmount = Number(dividend.cashAmount) * Number(dividend.dollarRate);
+            const convertedCashAmount =
+              Number(dividend.cashAmount) * Number(dividend.dollarRate);
             valueToFormat = convertedCashAmount;
           }
         }
 
-        const formattedCashAmount = formatCurrency(valueToFormat, countryToFormat);
+        const formattedCashAmount = formatCurrency(
+          valueToFormat,
+          countryToFormat
+        );
 
         return { ...dividend, formattedCashAmount };
       });
@@ -61,20 +76,25 @@ export function generateChartData(dividends: Dividend[], chartOptions: ChartOpti
     let sum = 0;
 
     filteredDividends
-      .map(dividend => {
-        if (dividend.country === 'US') {
+      .map((dividend) => {
+        if (dividend.country === "US") {
           return isOnlyUS
             ? dividend.cashAmount
             : Number(dividend.cashAmount) * Number(dividend.dollarRate);
         }
         return dividend.cashAmount;
       })
-      .forEach(value => {
+      .forEach((value) => {
         sum += Number(value);
       });
 
-    const ignoreMonth = monthYear.date > today && filteredDividends.length === 0;
+    const ignoreMonth =
+      monthYear.date > today && filteredDividends.length === 0;
     if (!ignoreMonth) {
+      filteredDividends.sort((a, b) => {
+        return a.paymentDate.getTime() - b.paymentDate.getTime();
+      });
+
       dividendsByMonth.push({
         month: monthYear.label,
         dividends: filteredDividends.reverse(),
@@ -87,9 +107,13 @@ export function generateChartData(dividends: Dividend[], chartOptions: ChartOpti
 }
 
 export function getInitialChartOptions(): ChartOptions {
+  const startDate = new Date(new Date().getFullYear(), 0, 1);
+  const endDate = new Date(new Date().getFullYear(), 11, 31);
   return {
-    startDate: new Date(new Date().getFullYear(), 0, 1),
-    endDate: new Date(new Date().getFullYear(), 11, 31),
-    country: 'all',
+    startDate,
+    endDate,
+    startDateISO: formatDateToISO(startDate),
+    endDateISO: formatDateToISO(endDate),
+    country: "all",
   };
 }

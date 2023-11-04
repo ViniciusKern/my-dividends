@@ -1,17 +1,22 @@
-import { useState } from 'react';
-import { Group, SegmentedControl, Text, createStyles } from '@mantine/core';
-import { DatesRangeValue, MonthPickerInput } from '@mantine/dates';
+import { useState } from "react";
+import { DatesRangeValue, MonthPickerInput } from "@mantine/dates";
 
-import { ChartOptions } from '@/types/chart-options.type';
+import { ChartOptions } from "@/types/chart-options.type";
+import SegmentedControl from "../common/segmented-control";
+import { formatDateToISO } from "@/utils/date-utils";
 
-type Props = {
+interface DividendChartOptionsProps {
   options: ChartOptions;
   onChangeChartOptions: (options: Partial<ChartOptions>) => void;
-};
+}
 
-function DividendChartOptions({ options, onChangeChartOptions }: Props) {
-  const { classes } = useStyles();
-  const [country, setCountry] = useState<ChartOptions['country']>(options.country);
+function DividendChartOptions({
+  options,
+  onChangeChartOptions,
+}: DividendChartOptionsProps) {
+  const [country, setCountry] = useState<ChartOptions["country"]>(
+    options.country
+  );
   const [dateRange, setDateRange] = useState<[Date | null, Date | null]>([
     options.startDate,
     options.endDate,
@@ -25,12 +30,14 @@ function DividendChartOptions({ options, onChangeChartOptions }: Props) {
       onChangeChartOptions({
         startDate,
         endDate,
+        startDateISO: formatDateToISO(startDate),
+        endDateISO: formatDateToISO(endDate),
       });
     }
   }
 
   function handleCountryChange(value: string) {
-    const newCountryValue = value as ChartOptions['country'];
+    const newCountryValue = value as ChartOptions["country"];
     setCountry(newCountryValue);
     onChangeChartOptions({
       country: newCountryValue,
@@ -38,41 +45,29 @@ function DividendChartOptions({ options, onChangeChartOptions }: Props) {
   }
 
   return (
-    <div className={classes.container}>
-      <Group spacing={'xs'}>
-        <Text fz='sm'>Período:</Text>
+    <div className="my-4 flex flex-col gap-4 sm:gap-12 sm:flex-row  ">
+      <div className="flex items-center justify-center gap-2">
+        <span className="text-sm">Period:</span>
         <MonthPickerInput
-          type='range'
-          valueFormat='MM/YYYY'
+          type="range"
+          valueFormat="MM/YYYY"
           value={dateRange}
           onChange={handleDateRangeChange}
           maw={160}
         />
-      </Group>
+      </div>
 
       <SegmentedControl
         value={country}
         onChange={handleCountryChange}
-        data={[
-          { label: 'Consolidado 💲', value: 'all' },
-          { label: 'BR 🇧🇷', value: 'BR' },
-          { label: 'US 🇺🇸', value: 'US' },
+        options={[
+          { label: "Consolidated 💲", value: "all" },
+          { label: "BR 🇧🇷", value: "BR" },
+          { label: "US 🇺🇸", value: "US" },
         ]}
       />
     </div>
   );
 }
-
-const useStyles = createStyles(theme => ({
-  container: {
-    display: 'flex',
-    justifyContent: 'flex-start',
-    gap: '48px',
-    alignItems: 'center',
-    paddingTop: theme.spacing.lg,
-    paddingLeft: theme.spacing.lg,
-    paddingBottom: theme.spacing.sm,
-  },
-}));
 
 export default DividendChartOptions;

@@ -1,26 +1,16 @@
-import React, { ReactNode } from 'react';
-import { createStyles } from '@mantine/core';
+import React, { ReactNode } from "react";
 
-import AppHeader from './header';
-import AppFooter from './footer';
+import AppHeader from "./header";
+import AppFooter from "./footer";
 
 function Layout({ children }: { children: ReactNode }) {
-  const { classes } = useStyles();
-
   return (
     <>
       <AppHeader />
-      <main className={classes.main}>{children}</main>
+      <main className="px-6 pb-6 pt-2">{children}</main>
       <AppFooter />
     </>
   );
 }
-
-const useStyles = createStyles(theme => ({
-  main: {
-    padding: `calc(${theme.spacing.xl} * 1.5)`,
-    paddingTop: `calc(${theme.spacing.xl} * 1)`,
-  },
-}));
 
 export default Layout;
