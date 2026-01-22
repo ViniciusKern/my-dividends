@@ -7,6 +7,17 @@ type Props = {
   country?: "all" | "BR" | "US";
 };
 
+function applyUSReduction(dividend: Dividend): Dividend {
+  if (dividend.country === "US") {
+    const reducedAmount = Number(dividend.cashAmount) * 0.7; // taxes
+    return {
+      ...dividend,
+      cashAmount: reducedAmount.toString(),
+    };
+  }
+  return dividend;
+}
+
 export function useDividends({ country = "all", startDate, endDate }: Props) {
   return useQuery<Dividend[]>({
     queryKey: ["dividendsList", country, startDate, endDate],
@@ -21,7 +32,7 @@ export function useDividends({ country = "all", startDate, endDate }: Props) {
           paymentDate: new Date(item.paymentDate),
         })
       );
-      return dividends;
+      return dividends.map(applyUSReduction);
     },
     refetchOnWindowFocus: false,
     refetchOnMount: false,
