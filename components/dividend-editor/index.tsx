@@ -40,7 +40,7 @@ function DividendEditor({ stocks, onSave, onClose }: Props) {
   }
 
   function handleChangeCashAmount(value: string) {
-    setCashAmount(Number(value));
+    setCashAmount(Number(value.replace(".", "").replace(",", ".")));
   }
 
   function handleSave() {
