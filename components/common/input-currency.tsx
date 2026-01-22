@@ -21,6 +21,8 @@ export function InputCurrency({
     <div className="relative">
       <NumericFormat
         decimalScale={2}
+        decimalSeparator=","
+        thousandSeparator="."
         value={value}
         onChange={(event) => onChange?.(event.target.value)}
         name={name}
